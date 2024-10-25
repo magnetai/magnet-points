@@ -27,17 +27,19 @@ class Authentication(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         try:
             if is_inner_call(request.scope["path"]):
-                if request.client.host == "127.0.0.1":
-                    response = await call_next(request)
-                    return response
-                else:
-                    return JSONResponse(
-                            status_code=501,
-                            content={
-                                "status": 501,
-                                "message": "Unauthorized call"
-                            }
-                        )
+                # if request.client.host == "127.0.0.1":
+                #     response = await call_next(request)
+                #     return response
+                # else:
+                #     return JSONResponse(
+                #             status_code=501,
+                #             content={
+                #                 "status": 501,
+                #                 "message": "Unauthorized call"
+                #             }
+                #         )
+                response = await call_next(request)
+                return response
 
             # provider = HTTPProvider(configs.http_provider)
             # w3 = Web3(provider)
