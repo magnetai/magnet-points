@@ -2,6 +2,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.services.point_calculator import PointCalculator
 from app.services.point_service import PointService
+from app.config.settings import settings
 import time
 
 from app.config.logger import get_logger
@@ -11,11 +12,18 @@ logger = get_logger(__name__)
 class PointScheduler:
     def __init__(self):
         self.scheduler = BackgroundScheduler()
-        self.scheduler.add_job(
-            self.calculate_hourly_points,
-            CronTrigger(minute="*"),  # Executed at the top of every hour
-            id='calculate_points'
-        )
+        if settings.CRON_TYPE == 'prod':
+            self.scheduler.add_job(
+                self.calculate_hourly_points,
+                CronTrigger(minute=0),  # Executed at the top of every hour
+                id='calculate_points'
+            )
+        else:
+            self.scheduler.add_job(
+                self.calculate_hourly_points,
+                CronTrigger(minute="*"),  # Executed at 1 am UTC every minute
+                id='calculate_points'
+            )
 
     def calculate_hourly_points(self):
         """​Scoring task executed once every hour"""

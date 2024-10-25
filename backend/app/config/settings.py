@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str = ""
     ADMIN_ADDRESS: str = ""
-    
+    CRON_TYPE: str = "prod"
     class Config:
         env_file = ".env"
 
