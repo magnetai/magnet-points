@@ -10,7 +10,8 @@ scheduler = PointScheduler()
 app = FastAPI(
     title="Magnet points API",
     description="Magnet points calculation & query API",
-    version="1.0.0"
+    version="1.0.0",
+    root_path="/api/v0",
 )
 
 app.add_middleware(Authentication)

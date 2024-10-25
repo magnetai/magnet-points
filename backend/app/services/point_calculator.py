@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 class PointCalculator:
     def __init__(self):
         self.redis = redis_client.client
-        self.POINT_KEY = "user:points"  # Sorted Set stores user scores
+        self.ARDIO_ALPHA_POINT_KEY = "user:points:ardio_alpha"  # Sorted Set stores user scores
         self.USER_DETAILS_KEY = "user:details:{}"  # Hash Store user details
         self.LAST_PROCESSED_TIME_KEY = "points_last_processed_time"
         self.USER_LAST_ACTION_DAY = "user:last_action_day:{}"  # stores user daily activity information
@@ -25,7 +25,7 @@ class PointCalculator:
     def init_points(self, address: str):
         """Initialize points"""
         try:
-            self.redis.zadd(self.POINT_KEY, { address: 10})
+            self.redis.zadd(self.ARDIO_ALPHA_POINT_KEY, { address: 10})
         except Exception as e:
             logger.info(f"Error initializing points: {e}")
     
@@ -54,7 +54,7 @@ class PointCalculator:
         :param address: User address
         :return: The number of points, if the address does not exist, return None
         """
-        points = self.redis.zscore(self.POINT_KEY, address)
+        points = self.redis.zscore(self.ARDIO_ALPHA_POINT_KEY, address)
         return float(points) if points is not None else None
     
     def increment_points(self, address: str, increment: float) -> Optional[float]:
@@ -65,7 +65,7 @@ class PointCalculator:
         :return: Total points after increase
         """
         try:
-            return float(self.redis.zincrby(self.POINT_KEY, increment, address))
+            return float(self.redis.zincrby(self.ARDIO_ALPHA_POINT_KEY, increment, address))
         except Exception as e:
             logger.error(f"Error incrementing points: {e}")
             return None
@@ -154,47 +154,45 @@ class PointCalculator:
                 user_id = message_data['user_id']
                 content = message_data['content']                
                 timestamp = int(message_data['timestamp'])
-                
-                point = self.calculate_message_point(user_id, content, timestamp)
+                points = self.calculate_message_point(user_id, content, timestamp)
                 
                 if user_id not in user_points:
                     user_points[user_id] = {
-                        'point': 0,
-                        # 'message_count': 0
+                        'points': 0,
                     }
-                
-                user_points[user_id]['point'] += point
-                # user_points[user_id]['message_count'] += 1
-            
+                user_points[user_id]['points'] += points
             cursor += len(result) - 1
             if cursor >= total_results:
                 break
 
         # pipeline = self.redis.pipeline()
         for user_id, data in user_points.items():
-            points = self.redis.zscore(self.POINT_KEY, user_id)
+            points = self.redis.zscore(self.ARDIO_ALPHA_POINT_KEY, user_id)
             logger.info(f"Points in db: {points}")
             if points is None:
-                increment = float(data['point']) + 10
-                self.redis.zadd(self.POINT_KEY, {user_id: increment})
+                increment = float(data['points']) + 10
+                self.redis.zadd(self.ARDIO_ALPHA_POINT_KEY, {user_id: increment})
             else:
-                # query from t1 points
-                t1_points = self.redis.hgetall(self.T1_POINTS_KEY.format(user_id))
+                increment = data['points']
+                self.redis.zincrby(self.ARDIO_ALPHA_POINT_KEY, increment, user_id)
                 
-                logger.info(f"t1_points: {t1_points}")
-                if not t1_points:
-                    increment = data['point']
-                    self.redis.zincrby(self.POINT_KEY, float(increment), user_id)
-                else:
-                    t1_is_initialized = t1_points['is_initialized']
-                    logger.info(f"t1_is_initialized: {t1_is_initialized}")
-                    t1_is_initialized = bool(int(t1_is_initialized))
-                    if not t1_is_initialized:
-                        self.redis.hset(self.T1_POINTS_KEY.format(user_id), 'is_initialized', 1)
-                        increment = float(data['point']) + 10
-                        self.redis.zincrby(self.POINT_KEY, increment, user_id)
-                    else:
-                        increment = data['point']
-                        self.redis.zincrby(self.POINT_KEY, increment, user_id)
+                # # query from t1 points
+                # t1_points = self.redis.hgetall(self.T1_POINTS_KEY.format(user_id))
+                
+                # logger.info(f"t1_points: {t1_points}")
+                # if not t1_points:
+                #     increment = data['point']
+                #     self.redis.zincrby(self.POINT_KEY, float(increment), user_id)
+                # else:
+                #     t1_is_initialized = t1_points['is_initialized']
+                #     logger.info(f"t1_is_initialized: {t1_is_initialized}")
+                #     t1_is_initialized = bool(int(t1_is_initialized))
+                #     if not t1_is_initialized:
+                #         self.redis.hset(self.T1_POINTS_KEY.format(user_id), 'is_initialized', 1)
+                #         increment = float(data['point']) + 10
+                #         self.redis.zincrby(self.POINT_KEY, increment, user_id)
+                #     else:
+                #         increment = data['point']
+                #         self.redis.zincrby(self.POINT_KEY, increment, user_id)
                         
         # pipeline.execute()

@@ -31,7 +31,6 @@ class UserPoint(BaseModel):
 class LeaderboardResponse(BaseModel):
     total_users: int
     leaderboard: List[UserPoint]
-    user_rank: Optional[UserPoint] = None  # Ranking information of current query user
 
 class UserScoreResponse(BaseModel):
     user_id: str

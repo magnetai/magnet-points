@@ -14,7 +14,7 @@ from app.config.logger import get_logger
 logger = get_logger(__name__)
 
 def is_inner_call(path: str):
-    for api in ['/get_user_point']:
+    for api in ['/get_user_points', 'leaderboard']:
         if path.find(api) != -1:
             return True
 
