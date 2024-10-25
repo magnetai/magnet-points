@@ -124,7 +124,7 @@ class PointService:
                 rank = self.redis_client.zrevrank(self.ardio_alpha_leaderboard_key, uid)
                 leaderboard.append({
                     "user_id": format_eth_address(uid),
-                    "points": int(point),
+                    "points": int(point) if point is not None else 0,
                     "rank": rank + 1
                 })
 

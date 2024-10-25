@@ -23,7 +23,7 @@ class HistoryResponse(BaseModel):
 
 class UserPoint(BaseModel):
     user_id: str
-    point: int
+    points: int
     rank: int
     # message_count: int
     # last_message_time: int
