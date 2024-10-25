@@ -10,7 +10,7 @@ export default function Home() {
     setKeyword(keyword);
   }
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen h-screen bg-custom-bg bg-cover bg-center bg-no-repeat bg-[#fff6f3] overflow-y-scroll">
+    <div className="flex flex-col items-center justify-start min-h-screen h-screen bg-custom-bg bg-cover bg-center bg-no-repeat bg-[#f5f3ff] overflow-y-scroll">
       <header className="mt-28 flex flex-col items-center max-w-[684px]">
         <SvgIcon name="title" width={404} height={44} />
         <div className="flex flex-col items-start mt-8 text-base break-words text-[#666]">
