@@ -1,0 +1,9 @@
+__pycache__
+**/.venv
+config.yml
+*.swp
+mock/
+.DS_store
+logs/
+example.json
+**/.env
