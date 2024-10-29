@@ -77,15 +77,24 @@ class PointCalculator:
     def handle_action_message(self, user_id: str, timestamp: int):
         """Update the date of the last action performed by the user"""
         user_action_day_key = self.USER_LAST_ACTION_DAY.format(user_id)
-        last_action_day = str(self.redis.get(user_action_day_key))
+        last_action_day = self.redis.get(user_action_day_key)
         action_day = str(datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d'))
-        last_action_time = datetime.strptime(last_action_day, "%Y-%m-%d")
-        current_action_time = datetime.strptime(action_day, "%Y-%m-%d")
-        if last_action_day is None or current_action_time > last_action_time:
+        logger.info(f"Last action day for user {user_id}: {last_action_day}")
+        
+        if last_action_day is None:
             logger.info(f"Updating last action day for user {user_id} to {action_day}")
             self.redis.set(user_action_day_key, action_day)
             return 10
         else:
+            last_action_time = datetime.strptime(str(last_action_day), "%Y-%m-%d")
+            last_action_time_stamp = int(last_action_time.timestamp())
+            current_action_time = datetime.strptime(action_day, "%Y-%m-%d")
+            current_action_time_stamp = int(current_action_time.timestamp())
+            if current_action_time_stamp > last_action_time_stamp:
+                logger.info(f"Updating last action day for user {user_id} to {action_day}")
+                self.redis.set(user_action_day_key, action_day)
+                return 10
+            
             return 5
 
     def calculate_message_point(self, user_id: str, content: str, timestamp: int) -> int:
