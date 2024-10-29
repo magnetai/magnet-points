@@ -30,6 +30,7 @@ export function Main() {
     const [currentPage, setCurrentPage] = useState(1);
     const [rankList, setRankList] = useState<RankItem[]>([]);
     const [searchList, setSearchList] = useState<SearchItem[]>([]);
+    const [showSearchList, setShowSearchList] = useState(false);
     const [activePagenationArray, setActivePagenationArray] = useState<number[]>([])
     const [totalPage, setTotalPage] = useState(1);
     const [pagenationArray, setPagenationArray] = useState<number[]>([]);
@@ -41,6 +42,8 @@ export function Main() {
 
     const handleTypeChange = async (type: string) => {
         setTableType(type);
+        setKeyword("");
+        setCurrentPage(1);
     }
 
     useEffect(() => {
@@ -60,17 +63,24 @@ export function Main() {
 
 
     const hanleDataFetch = async () => {
-        if (keyword.length > 0) {
-            setLoading(true);
-            const { user_id, ardio_alpha_points, t1_points } = await getUserPoints(keyword);
-            setSearchList([{ user_id, ardio_alpha_points, t1_points }]);
-            setLoading(false);
-        } else {
+        const len = keyword.length;
+        if (len === 0) {
             setLoading(true);
             const list = await handleGetList(currentPage, tableType);
             setRankList(list.leaderboard);
             setTotalPage(list.total_users);
+            setShowSearchList(false);
             setLoading(false);
+        } else if (len > 0 && len < 42) {
+            return;
+        } else if (len === 42) {
+            setLoading(true);
+            const { user_id, ardio_alpha_points, t1_points } = await getUserPoints(keyword);
+            setSearchList([{ user_id, ardio_alpha_points, t1_points }]);
+            setShowSearchList(true);
+            setLoading(false);
+        } else {
+            return;
         }
     }
 
@@ -115,9 +125,9 @@ export function Main() {
             </div>
             <div className="w-full mt-8 flex flex-col items-center">
                 {
-                    !keyword && (
+                    !showSearchList && (
                         <Select defaultValue={tableType} onValueChange={handleTypeChange}>
-                            <SelectTrigger className="w-[180px]" value={tableType}>
+                            <SelectTrigger className="w-[180px] bg-white border-none focus:ring-transparent" value={tableType}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -137,7 +147,7 @@ export function Main() {
                 <div className="w-full">
                     {
 
-                        loading ? (<Loading />) : keyword ? (<SearchList list={searchList} />) : (<TableList list={rankList} currentPage={currentPage} setCurrentPage={setCurrentPage} activePagenationArray={activePagenationArray} prevPage={prevPage} nextPage={nextPage} />)
+                        loading ? (<Loading currentPage={currentPage} setCurrentPage={setCurrentPage} activePagenationArray={activePagenationArray} prevPage={prevPage} nextPage={nextPage} />) : showSearchList ? (<SearchList list={searchList} />) : (<TableList list={rankList} currentPage={currentPage} setCurrentPage={setCurrentPage} activePagenationArray={activePagenationArray} prevPage={prevPage} nextPage={nextPage} />)
                     }
                 </div>
             </div>
@@ -145,26 +155,45 @@ export function Main() {
     )
 }
 
-function Loading() {
+function Loading({ currentPage, setCurrentPage, activePagenationArray, prevPage, nextPage }: { currentPage: number, activePagenationArray: number[], prevPage: () => void, nextPage: () => void, setCurrentPage: (page: number) => void }) {
     return (
         <div className="w-full flex flex-col items-center">
             <div className="w-full flex flex-col bg-[#FFFFFF99] opacity-60 rounded-[20px] py-5 mt-4">
-                <div className="flex items-center justify-between border-b-[1px] border-[#EBEBEB] pb-[14px] pl-[141px] pr-[139px]">
-                    <Skeleton className="w-[60px] h-[24px]"/>
-                    <Skeleton className="w-[44px] h-[24px]"/>
-                    <Skeleton className="w-[36px] h-[24px]"/>
+                <div className="grid grid-cols-3 gap-40 text-center border-b-[1px] border-[#EBEBEB] pb-[14px] px-[150px]">
+                    <Skeleton className="w-[60px] h-[24px] col-span-1" />
+                    <Skeleton className="w-[44px] h-[24px] col-span-1" />
+                    <Skeleton className="w-[36px] h-[24px] col-span-1" />
                 </div>
                 <div className="mt-4 flex flex-col gap-8">
                     {
                         Array.from({ length: 10 }, (_, index) => (
-                            <div key={index} className="flex items-center justify-between pl-[115px] pr-[150px]">
-                                <Skeleton className="w-[106px] h-[24px]"/>
-                                <Skeleton className="w-[30px] h-[24px]"/>
-                                <Skeleton className="w-[10px] h-[24px]"/>
+                            <div key={index} className="grid grid-cols-3 gap-40 text-center px-[150px]">
+                                <Skeleton className="w-[106px] h-[24px] col-span-1" />
+                                <Skeleton className="w-[40px] h-[24px] col-span-1" />
+                                <Skeleton className="w-[20px] h-[24px] col-span-1" />
                             </div>
                         ))
                     }
                 </div>
+            </div>
+            <div className="mt-6">
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious className="cursor-pointer" onClick={prevPage} />
+                        </PaginationItem>
+                        {
+                            activePagenationArray.map((page, index) => (
+                                <PaginationItem key={index} onClick={() => { setCurrentPage(page) }}>
+                                    <PaginationLink className="cursor-pointer" isActive={currentPage === page}>{page}</PaginationLink>
+                                </PaginationItem>
+                            ))
+                        }
+                        <PaginationItem>
+                            <PaginationNext className="cursor-pointer" onClick={nextPage} />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
             </div>
         </div>
     )
@@ -175,18 +204,18 @@ function SearchList({ list }: { list: SearchItem[] }) {
     return (
         <div className="w-full flex flex-col items-center">
             <div className="w-full flex flex-col bg-[#FFFFFF99] opacity-60 rounded-[20px] py-5 mt-4">
-                <div className="flex items-center justify-between border-b-[1px] border-[#EBEBEB] pb-[14px] pl-[141px] pr-[139px]">
-                    <span>Address</span>
-                    <span>Ardio Alpha Points</span>
-                    <span>Magnet T1 Points</span>
+                <div className="grid grid-cols-3 gap-40 border-b-[1px] border-[#EBEBEB] pb-[14px] pl-[141px] pr-[139px]">
+                    <span className="col-span-1">Address</span>
+                    <span className="col-span-1">Ardio Alpha Points</span>
+                    <span className="col-span-1">Magnet T1 Points</span>
                 </div>
                 <div className="mt-4 flex flex-col gap-8">
                     {
                         list.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between pl-[115px] pr-[150px]">
-                                <span>{item.user_id}</span>
-                                <span>{item.ardio_alpha_points}</span>
-                                <span>{item.t1_points}</span>
+                            <div key={index} className="grid grid-cols-3 gap-40 text-center pl-[115px] pr-[150px]">
+                                <span className="col-span-1">{item.user_id}</span>
+                                <span className="col-span-1">{item.ardio_alpha_points}</span>
+                                <span className="col-span-1">{item.t1_points}</span>
                             </div>
                         ))
                     }
@@ -201,18 +230,18 @@ function TableList({ list, currentPage, setCurrentPage, activePagenationArray, p
     return (
         <div className="w-full flex flex-col items-center">
             <div className="w-full flex flex-col bg-[#FFFFFF99] opacity-60 rounded-[20px] py-5 mt-4">
-                <div className="flex items-center justify-between border-b-[1px] border-[#EBEBEB] pb-[14px] pl-[141px] pr-[139px]">
-                    <span>Address</span>
-                    <span>Points</span>
-                    <span>Rank</span>
+                <div className="grid grid-cols-3 gap-40 text-center border-b-[1px] border-[#EBEBEB] pb-[14px] px-[150px]">
+                    <span className="col-span-1">Address</span>
+                    <span className="col-span-1">Points</span>
+                    <span className="col-span-1">Rank</span>
                 </div>
                 <div className="mt-4 flex flex-col gap-8">
                     {
                         list.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between pl-[115px] pr-[150px]">
-                                <span>{item.user_id}</span>
-                                <span>{item.points}</span>
-                                <span>{item.rank}</span>
+                            <div key={index} className="grid grid-cols-3 gap-40 text-center px-[150px]">
+                                <span className="col-span-1">{item.user_id}</span>
+                                <span className="col-span-1">{item.points}</span>
+                                <span className="col-span-1">{item.rank}</span>
                             </div>
                         ))
                     }
@@ -222,17 +251,17 @@ function TableList({ list, currentPage, setCurrentPage, activePagenationArray, p
                 <Pagination>
                     <PaginationContent>
                         <PaginationItem>
-                            <PaginationPrevious onClick={prevPage} />
+                            <PaginationPrevious className="cursor-pointer" onClick={prevPage} />
                         </PaginationItem>
                         {
                             activePagenationArray.map((page, index) => (
                                 <PaginationItem key={index} onClick={() => { setCurrentPage(page) }}>
-                                    <PaginationLink isActive={currentPage === page}>{page}</PaginationLink>
+                                    <PaginationLink className="cursor-pointer" isActive={currentPage === page}>{page}</PaginationLink>
                                 </PaginationItem>
                             ))
                         }
                         <PaginationItem>
-                            <PaginationNext onClick={nextPage} />
+                            <PaginationNext className="cursor-pointer" onClick={nextPage} />
                         </PaginationItem>
                     </PaginationContent>
                 </Pagination>
